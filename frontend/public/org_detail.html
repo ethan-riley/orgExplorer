@@ -125,9 +125,15 @@
       alert('Please select a cluster first');
       return;
     }
-    const currentClusterId = detailsTable.querySelector('tr:first-child td').textContent;
-    if (!currentClusterId) {
-      alert('No cluster ID found');
+    // Get cluster ID from the details table (first column of first data row)
+    const clusterIdCell = detailsTable.querySelector('tr:nth-child(1) td:nth-child(1)');
+    if (!clusterIdCell) {
+      alert('Could not find cluster ID in details table');
+      return;
+    }
+    const currentClusterId = clusterIdCell.textContent.trim();
+    if (!currentClusterId || currentClusterId.includes('%') || currentClusterId.length < 3) {
+      alert('Invalid cluster ID: ' + currentClusterId);
       return;
     }
     if (!data?.org?.key) {
