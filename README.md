@@ -1,4 +1,3 @@
-```markdown
 # BackEnd: Org Explorer API
 
 ## Overview
