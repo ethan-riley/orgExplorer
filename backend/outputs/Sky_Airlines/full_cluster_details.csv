@@ -1,0 +1,11 @@
+ClusterID,Cluster Name,Provider,accountID,Region,Phase 1,Phase 2,CPU Count,WOOP Enabled,% OnDemand Nodes,% Spot Nodes,Fallback Nodes?,First Rebalance,Connected Date,Environment,Evictor,Scheduled Rebalance,WOOP enabled %,Kubernetes version,Extended Support,3rd Party,CastAI Nodes Managed,Provider Nodes Managed,3rd Party Nodes Managed
+51dc0e6b-2f86-4819-837e-d86541b92876,sky-web-stage,GKE,sky-technologies,us-central1,Yes,Yes,10,Yes,0.0%,100.0%,0.0%,Yes,2024-11-26,unknown,Installed (Basic),No,98.86%,1.30.9-gke.1127000,See API,No,100.0%,0.0%,0.0%
+736e683e-2a1b-4229-bcd9-f6574ad82e6c,sky-microservicios-prod-1,GKE,sky-technologies,us-west2,Yes,Yes,204,Yes,100.0%,0.0%,0.0%,No,,Production,Uninstalled,No,93.50%,1.30.9-gke.1127000,See API,No,0.0%,100.0%,0.0%
+78d19914-1575-47c6-be84-29ba015d0a98,sky-microservicios-stage,GKE,sky-technologies,us-east4,Yes,Yes,30,Yes,0.0%,100.0%,0.0%,Yes,2024-11-13,unknown,Installed (Basic),No,99.49%,1.30.9-gke.1127000,See API,No,100.0%,0.0%,0.0%
+94c7586e-bb1b-448b-94f0-b55a28448f2f,sky-runsvc-qa,GKE,sky-technologies,us-west1,Yes,No,6,No,100.0%,0.0%,0.0%,No,,Staging,Uninstalled,No,0.00%,Unknown,See API,No,0.0%,100.0%,0.0%
+c551f736-dbeb-4a70-928b-41800d8a7c94,sky-web-prod-1,GKE,sky-technologies,us-west2,Yes,No,44,No,100.0%,0.0%,0.0%,No,,Production,Uninstalled,No,0.00%,Unknown,See API,No,0.0%,100.0%,0.0%
+d864dc53-5178-4d26-84b1-f31dae9658c1,sky-microservicios-qa,GKE,sky-technologies,us-east4,Yes,Yes,56,Yes,0.0%,100.0%,0.0%,Yes,2024-10-21,Staging,Installed (Basic),No,99.55%,1.30.9-gke.1127000,See API,No,100.0%,0.0%,0.0%
+fdf6ff2f-81ab-4631-b867-48897c01e5e9,sky-runsvc-stage,GKE,sky-technologies,us-west4,Yes,No,8,No,100.0%,0.0%,0.0%,No,,unknown,Uninstalled,No,0.00%,Unknown,See API,No,0.0%,100.0%,0.0%
+4d9bbb71-8bb3-4af0-b810-804bf2f98379,sky-web-qa,GKE,sky-technologies,us-west3,Yes,Yes,16,Yes,0.0%,100.0%,0.0%,Yes,2024-12-04,Staging,Installed (Basic),No,99.10%,1.30.9-gke.1127000,See API,No,100.0%,0.0%,0.0%
+ba0d33b3-7e01-442d-8e8c-7c1c169816be,sky-web-prod-2,GKE,sky-technologies,us-central1,Yes,No,48,No,100.0%,0.0%,0.0%,No,,Production,Uninstalled,No,0.00%,Unknown,See API,No,0.0%,100.0%,0.0%
+f780925c-1792-431f-8aee-efe297374729,sky-microservicios-prod-2,GKE,sky-technologies,us-east4,Yes,Yes,204,Yes,100.0%,0.0%,0.0%,No,,Production,Uninstalled,No,93.60%,1.30.9-gke.1127000,See API,No,0.0%,100.0%,0.0%

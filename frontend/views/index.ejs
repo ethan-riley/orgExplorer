@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Organization Explorer</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+</head>
+<body>
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="display-5 fw-bold mb-0">Organization Explorer</h1>
+      <button onclick="openAddDialog()" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i> Add Organization
+      </button>
+    </div>
+
+    <div class="input-group search-bar">
+      <span class="input-group-text bg-white border-end-0">
+        <i class="fas fa-search search-icon"></i>
+      </span>
+      <input 
+        type="text" 
+        id="clusterFilter" 
+        class="form-control border-start-0 ps-0" 
+        placeholder="Search organizations by name or ID..."
+      >
+    </div>
+
+    <!-- Inline edit dialog placeholder -->
+    <div id="editDialog" class="edit-dialog"></div>
+
+    <% if (orgs && orgs.length > 0) { %>
+      <% orgs.forEach(org => { %>
+        <% if (org.enabled == 1) { %>
+          <div class="org-card">
+            <a href="/org/<%= org.id %>" class="h5 text-decoration-none">
+              <%= org.org %>
+            </a>
+            <p class="text-muted mb-0">
+              Organization ID: <%= org.org_id || 'Not specified' %><br>
+              Added: <%= new Date(org.created_at).toLocaleDateString() %><br>
+              Region: <%= org.region || 'US' %>
+            </p>
+            <div class="org-card-footer">
+              <small class="text-muted">Last synced: <%= new Date(org.latest_sync).toLocaleString() %></small>
+              <div>
+                <button onclick="openEditDialog(<%= org.id %>)" class="btn edit-btn btn-sm">
+                  <i class="fas fa-pencil-alt me-1"></i> Edit
+                </button>
+                <a href="/org/disable/<%= org.id %>" class="btn remove-btn btn-sm">
+                  <i class="fas fa-trash me-1"></i> Disable
+                </a>
+              </div>
+            </div>
+          </div>
+        <% } %>
+      <% }); %>
+    <% } else { %>
+      <div class="alert alert-info">No organizations found.</div>
+    <% } %>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    function openEditDialog(orgId) {
+      $.ajax({
+        url: `/orgs/edit/${orgId}`,
+        type: "GET",
+        success: function(data) {
+          $("#editDialog").html(data).fadeIn();
+        },
+        error: function(err) {
+          console.error("Error loading edit form:", err);
+        }
+      });
+    }
+
+    function openAddDialog() {
+      $.ajax({
+        url: "/orgs/add_form",
+        type: "GET",
+        success: function(data) {
+          $("#editDialog").html(data).fadeIn();
+        },
+        error: function(err) {
+          console.error("Error loading add form:", err);
+        }
+      });
+    }
+
+    function closeEditDialog() {
+      $("#editDialog").fadeOut(function() {
+        $(this).html("");
+      });
+    }
+
+    // Search functionality
+    $(document).ready(function() {
+      $("#clusterFilter").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $(".org-card").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+  </script>
+</body>
+</html>

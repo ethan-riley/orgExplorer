@@ -1,0 +1,46 @@
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">
+        <% if (isAdd) { %>
+          Add New Organization
+        <% } else { %>
+          Editing Organization <%= org.org %>
+        <% } %>
+      </h5>
+      <button type="button" class="btn-close" onclick="closeEditDialog()" aria-label="Close"></button>
+    </div>
+    <div class="card-body">
+      <form method="post" action="<% if (isAdd) { %>/orgs<% } else { %>/orgs/edit/<%= org.id %><% } %>">
+        <% if (!isAdd) { %>
+          <input type="hidden" name="id" value="<%= org.id %>">
+        <% } %>
+        <div class="mb-3">
+          <label for="org" class="form-label">Organization Name</label>
+          <input type="text" name="org" id="org" class="form-control" required value="<%= org.org %>">
+        </div>
+        <div class="mb-3">
+          <label for="key" class="form-label">API Key</label>
+          <input type="text" name="key" id="key" class="form-control" required value="<%= org.key %>">
+        </div>
+        <div class="mb-3">
+          <label for="org_id" class="form-label">Organization Identifier</label>
+          <input type="text" name="org_id" id="org_id" class="form-control" value="<%= org.org_id %>">
+        </div>
+        <div class="mb-3">
+          <label for="region" class="form-label">Region</label>
+          <select name="region" id="region" class="form-select">
+            <option value="US" <% if (org.region === 'US') { %>selected<% } %>>US Region</option>
+            <option value="EU" <% if (org.region === 'EU') { %>selected<% } %>>EU Region</option>
+          </select>
+        </div>
+        <div class="text-end">
+          <button type="button" class="btn btn-secondary me-2" onclick="closeEditDialog()">Cancel</button>
+          <% if (isAdd) { %>
+            <button name="action" value="add" type="submit" class="btn btn-primary">Add Organization</button>
+          <% } else { %>
+            <button name="action" value="update" type="submit" class="btn btn-primary">Save Changes</button>
+          <% } %>
+        </div>
+      </form>
+    </div>
+  </div>

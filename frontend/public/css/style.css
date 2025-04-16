@@ -1,0 +1,126 @@
+/* Base styles */
+body {
+    background-color: #f5f7fa;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #333;
+  }
+  
+  .container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  
+  /* Organization cards */
+  .org-card {
+    border: 1px solid #e0e5ec;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+  }
+  
+  .org-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .org-card h5 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: #2d3748;
+  }
+  
+  .org-card .btn {
+    margin-right: 0.5rem;
+    font-weight: 500;
+  }
+  
+  .org-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f0f2f5;
+  }
+  
+  /* Detail card */
+  .detail-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Buttons */
+  .btn-primary {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+  }
+  
+  .btn-primary:hover, .btn-primary:focus {
+    background-color: #2563eb;
+    border-color: #2563eb;
+  }
+  
+  .edit-btn {
+    background-color: #e9ecef;
+    color: #495057;
+    border: none;
+  }
+  
+  .edit-btn:hover {
+    background-color: #dee2e6;
+    color: #212529;
+  }
+  
+  .remove-btn {
+    background-color: #f8d7da;
+    color: #842029;
+    border: none;
+  }
+  
+  .remove-btn:hover {
+    background-color: #f5c2c7;
+    color: #6a1a21;
+  }
+  
+  /* Search bar */
+  .search-bar {
+    margin-bottom: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .search-icon {
+    color: #6c757d;
+  }
+  
+  /* Organization detail page */
+  .org-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  
+  .cluster-table {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .cluster-table th {
+    background-color: #f8fafc;
+    font-weight: 600;
+  }
+  
+  .table-row-clickable {
+    cursor: pointer;
+  }
+  
+  .table-row-clickable:hover {
+    background-color: #f1f5f9;
+  }

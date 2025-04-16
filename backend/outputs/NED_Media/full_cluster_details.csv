@@ -1,0 +1,1 @@
+ClusterID,Cluster Name,Provider,accountID,Region,Phase 1,Phase 2,CPU Count,WOOP Enabled,% OnDemand Nodes,% Spot Nodes,Fallback Nodes?,First Rebalance,Connected Date,Environment,Evictor,Scheduled Rebalance,WOOP enabled %,Kubernetes version,Extended Support,3rd Party,CastAI Nodes Managed,Provider Nodes Managed,3rd Party Nodes Managed

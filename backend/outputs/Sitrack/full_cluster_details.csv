@@ -1,0 +1,3 @@
+ClusterID,Cluster Name,Provider,accountID,Region,Phase 1,Phase 2,CPU Count,WOOP Enabled,% OnDemand Nodes,% Spot Nodes,Fallback Nodes?,First Rebalance,Connected Date,Environment,Evictor,Scheduled Rebalance,WOOP enabled %,Kubernetes version,Extended Support,3rd Party,CastAI Nodes Managed,Provider Nodes Managed,3rd Party Nodes Managed
+f2bb7e84-f120-4f12-91cc-aa5182228a7a,may-segundo,GKE,sitrackio,us-central1,Yes,Yes,1336,No,100.0%,0.0%,0.0%,Yes,2024-07-10,unknown,Installed (Basic),No,0.00%,1.30.9-gke.1127000,See API,No,100.0%,0.0%,0.0%
+3f3a82db-1440-4ea1-91d8-809a83b7a5f7,stk-scv-k8s-beta,GKE,sitrack-services,us-central1,Yes,Yes,170,Yes,0.0%,100.0%,0.0%,Yes,2024-05-09,unknown,Installed (Basic),No,89.12%,1.30.9-gke.1127000,See API,No,100.0%,0.0%,0.0%

@@ -1,0 +1,49 @@
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  function openEditDialog(orgId) {
+    $.ajax({
+      url: `/orgs/edit/${orgId}`,
+      type: "GET",
+      success: function(data) {
+        $("#editDialog").html(data).fadeIn();
+      },
+      error: function(err) {
+        console.error("Error loading edit form:", err);
+      }
+    });
+  }
+
+  function openAddDialog() {
+    $.ajax({
+      url: "/orgs/add_form",
+      type: "GET",
+      success: function(data) {
+        $("#editDialog").html(data).fadeIn();
+      },
+      error: function(err) {
+        console.error("Error loading add form:", err);
+      }
+    });
+  }
+
+  function closeEditDialog() {
+    $("#editDialog").fadeOut(function() {
+      $(this).html("");
+    });
+  }
+
+  // Search functionality
+  $(document).ready(function() {
+    $("#clusterFilter").on("keyup", function() {
+      const value = $(this).val().toLowerCase();
+      $(".org-card").filter(function() {
+        $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+      });
+    });
+  });
+</script>
+</body>
+</html>

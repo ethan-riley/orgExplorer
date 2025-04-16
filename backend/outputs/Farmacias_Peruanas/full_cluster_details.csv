@@ -1,0 +1,9 @@
+ClusterID,Cluster Name,Provider,accountID,Region,Phase 1,Phase 2,CPU Count,WOOP Enabled,% OnDemand Nodes,% Spot Nodes,Fallback Nodes?,First Rebalance,Connected Date,Environment,Evictor,Scheduled Rebalance,WOOP enabled %,Kubernetes version,Extended Support,3rd Party,CastAI Nodes Managed,Provider Nodes Managed,3rd Party Nodes Managed
+a6050b6a-cc7b-4a49-a7a9-1378997e58d5,fp-qas-dig-k8s,GKE,fp-qas-dig-project,us-east1,Yes,No,76,No,5.6%,94.4%,0.0%,Yes,2023-05-10,unknown,Uninstalled,No,0.00%,1.26.5-gke.2100,See API,No,0.0%,100.0%,0.0%
+b1dd7b85-3965-4b86-a2f0-06d0a642c24d,fp-prd-me-ti-k8s,GKE,fp-prd-me-ti-project,us-east1,Yes,No,88,No,100.0%,0.0%,0.0%,No,,Production,Uninstalled,No,0.00%,1.29.7-gke.1008000,See API,No,0.0%,100.0%,0.0%
+e3527e41-dad4-4f0c-b6c8-62a72a8843a6,fp-prd-ikf-eks,EKS,519901771307,us-east-1,Yes,No,404,No,100.0%,0.0%,0.0%,No,,Production,Uninstalled,No,0.00%,Unknown,See API,No,0.0%,100.0%,0.0%
+194c2799-2df4-4a8d-a58c-72d7b29059eb,fp-prd-dig-k8s,GKE,fp-prd-dig-project,us-east1,Yes,No,152,No,100.0%,0.0%,0.0%,No,,Production,Uninstalled,No,0.00%,1.24.11-gke.1000,See API,No,0.0%,100.0%,0.0%
+6474d1eb-83a0-49c6-805a-eecb5338634b,fp-dev-dig-k8s,GKE,fp-dev-dig-project,us-east1,Yes,No,64,No,0.0%,100.0%,0.0%,Yes,2023-09-14,Development,Uninstalled,No,0.00%,1.26.5-gke.2100,See API,No,0.0%,100.0%,0.0%
+94dcb20f-2421-4335-9d4c-72463df00618,fp-uat-dig-k8s,GKE,fp-uat-dig-project,us-east1,Yes,No,56,No,0.0%,100.0%,0.0%,Yes,2023-05-10,unknown,Uninstalled,No,0.00%,1.24.11-gke.1000,See API,No,0.0%,100.0%,0.0%
+9ea8c073-cace-4e83-b349-08fb28cd82dd,fp-prd-ti-k8s,GKE,fp-prd-ti-project,us-east1,Yes,No,80,No,100.0%,0.0%,0.0%,No,,Production,Uninstalled,No,0.00%,Unknown,See API,No,0.0%,100.0%,0.0%
+9fb664bf-74e5-4f4e-bc7f-853548ef50eb,fp-prd-mf-eks,EKS,519901771307,us-east-1,Yes,No,80,No,100.0%,0.0%,0.0%,No,,Production,Uninstalled,No,0.00%,Unknown,See API,No,0.0%,100.0%,0.0%

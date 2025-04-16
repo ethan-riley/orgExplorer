@@ -1,0 +1,4 @@
+ClusterID,Cluster Name,Provider,accountID,Region,Phase 1,Phase 2,CPU Count,WOOP Enabled,% OnDemand Nodes,% Spot Nodes,Fallback Nodes?,First Rebalance,Connected Date,Environment,Evictor,Scheduled Rebalance,WOOP enabled %,Kubernetes version,Extended Support,3rd Party,CastAI Nodes Managed,Provider Nodes Managed,3rd Party Nodes Managed
+546df9ab-abd3-45ed-a013-e8331ac100c7,patiotuerca-eks-v2,EKS,705839499327,us-east-1,Yes,Yes,4,No,100.0%,0.0%,0.0%,No,,unknown,Uninstalled,No,0.00%,1.30,See API,No,0.0%,100.0%,0.0%
+8ab24279-0c96-4598-8daa-e12a66ccd873,latamautos-prod-eks-v1,EKS,786843715953,us-east-1,Yes,Yes,32,No,42.9%,57.1%,0.0%,Yes,2023-08-09,Production,Installed (Basic),No,0.00%,1.28,See API,No,100.0%,0.0%,0.0%
+ab7cd0da-d98a-4c46-a27d-ca3e442afed2,patiotuerca-eks-v1,EKS,705839499327,us-east-1,Yes,Yes,22,No,10.0%,90.0%,0.0%,Yes,2023-08-09,unknown,Installed (Basic),No,0.00%,1.28,See API,No,100.0%,0.0%,0.0%

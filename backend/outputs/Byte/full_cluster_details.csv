@@ -1,0 +1,2 @@
+ClusterID,Cluster Name,Provider,accountID,Region,Phase 1,Phase 2,CPU Count,WOOP Enabled,% OnDemand Nodes,% Spot Nodes,Fallback Nodes?,First Rebalance,Connected Date,Environment,Evictor,Scheduled Rebalance,WOOP enabled %,Kubernetes version,Extended Support,3rd Party,CastAI Nodes Managed,Provider Nodes Managed,3rd Party Nodes Managed
+4519cdf2-b18e-4353-bd6e-d2607bfaf36a,wompreprod,EKS,198162641166,us-east-2,Yes,Yes,6,No,50.0%,50.0%,0.0%,Yes,2024-07-24,unknown,Uninstalled,No,0.00%,1.32,See API,No,33.3%,66.7%,0.0%
