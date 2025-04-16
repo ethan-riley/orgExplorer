@@ -11,10 +11,10 @@ Features:
 3. Every endpoint (except CSV download) returns JSON data.
 4. Runs on port 7667.
 """
-
 import sqlite3, os, csv, datetime, json, requests, statistics
 import pandas as pd
 from flask import Flask, request, redirect, url_for, jsonify, flash, send_file
+from gevent.pywsgi import WSGIServer
 
 # Import the monthly savings report module.
 import monthlySavingsReport as msr
@@ -50,7 +50,7 @@ def init_db():
         )
     """)
     conn.commit()
-    
+
     # Check if the column 'latest_sync' exists; if it doesn't, add it.
     cursor = conn.execute("PRAGMA table_info(organizations)")
     columns = [col[1] for col in cursor.fetchall()]
@@ -61,7 +61,7 @@ def init_db():
         print("Added column 'latest_sync' to organizations table.")
     else:
         print("'latest_sync' column already exists in organizations table.")
-        
+
     conn.close()
 
 def init_cache_table():
@@ -205,7 +205,7 @@ def getKnownAnywhere(cluster_id, api_key):
             return "fargate"
         else:
             return "Unknown"
-    
+
 def simplify_version(provider, version_str):
     if provider.lower() == "eks":
         parts = version_str.split(".")
@@ -247,15 +247,15 @@ def getFargateVersion(cluster_id, api_key):
         if fvn <= fv:
            fv = fvn
     return fv
-    
+
 def determine_support_status(provider, version_str, support_data=None):
     from datetime import date, datetime
     simple_version = simplify_version(provider, version_str)
-    
+
     # If no support data is provided, fetch it
     if support_data is None:
         support_data = get_extended_support_data(provider)
-    
+
     # Iterate over each version object
     for item in support_data:
         cycle = item.get("cycle", "")
@@ -276,7 +276,7 @@ def determine_support_status(provider, version_str, support_data=None):
             else:
                 std_date_str = ""
                 ext_date_str = ""
-            
+
             try:
                 std_date = datetime.fromisoformat(std_date_str).date() if std_date_str else None
             except Exception as e:
@@ -287,7 +287,7 @@ def determine_support_status(provider, version_str, support_data=None):
             except Exception as e:
                 print(f"Error parsing extended support date '{ext_date_str}': {e}")
                 ext_date = None
-                
+
             today = date.today()
             if std_date and today <= std_date:
                 return "No"
@@ -562,7 +562,7 @@ def extract_full_cluster_info(cluster_id, details, offerings, api_key, schedule_
         if knownAnywhere == "fargate":
             info["Extended Support"] = determine_support_status("eks", k8sversion)
         else:
-            info["Extended Support"] = "Not Apply"    
+            info["Extended Support"] = "Not Apply"
     return info
 
 def fetch_full_cluster_info(api_key, org_dir="."):
@@ -742,7 +742,7 @@ def get_csv(org_db_id):
         df.to_csv(csv_file, index=False)
     if not os.path.exists(csv_file):
         return jsonify(error="CSV not found. Please refresh the summary.")
-    #return send_file(csv_file, as_attachment=True), 
+    #return send_file(csv_file, as_attachment=True),
     return csv_file
 
 #
@@ -769,8 +769,8 @@ def monthly_savings(org_db_id):
     # Check if the monthly savings report is already cached
     cached_report = get_cache(org_db_id, CACHE_KEY_MS)
     if cached_report:
-        return jsonify(org=org, 
-                       monthly_savings_report=cached_report.get("savings"), 
+        return jsonify(org=org,
+                       monthly_savings_report=cached_report.get("savings"),
                        resource_costs=cached_report.get("resource"))
 
     # Otherwise, generate the report
@@ -784,8 +784,8 @@ def monthly_savings(org_db_id):
         report = {"savings": savings_data, "resource": resource_data}
         # Cache the generated report for this organization.
         set_cache(org_db_id, CACHE_KEY_MS, report)
-        return jsonify(org=org, 
-                       monthly_savings_report=savings_data, 
+        return jsonify(org=org,
+                       monthly_savings_report=savings_data,
                        resource_costs=resource_data)
     except Exception as e:
         return jsonify(error=f"Failed to generate monthly savings report: {str(e)}"), 500
@@ -850,4 +850,6 @@ def download_monthly_savings_csv(org_db_id):
     return send_file(zip_filename, as_attachment=True)
 
 if __name__ == "__main__":
-    app.run(debug=True, port=7667)
+    # app.run(debug=True, port=7667)
+    http_server = WSGIServer(('', 7667), app)
+    http_server.serve_forever()
