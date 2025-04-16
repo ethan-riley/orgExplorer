@@ -125,10 +125,17 @@
       alert('Please select a cluster first');
       return;
     }
-    // Get cluster ID from the details table (first column of first data row)
-    const clusterIdCell = detailsTable.querySelector('tr:nth-child(1) td:nth-child(1)');
+    // Get cluster ID from the details table (look for "Cluster ID" row)
+    const clusterIdRow = Array.from(detailsTable.querySelectorAll('tr')).find(tr => 
+      tr.textContent.includes('Cluster ID')
+    );
+    if (!clusterIdRow) {
+      alert('Could not find Cluster ID row in details table');
+      return;
+    }
+    const clusterIdCell = clusterIdRow.querySelector('td:last-child');
     if (!clusterIdCell) {
-      alert('Could not find cluster ID in details table');
+      alert('Could not find cluster ID value in table');
       return;
     }
     const currentClusterId = clusterIdCell.textContent.trim();
