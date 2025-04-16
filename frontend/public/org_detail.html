@@ -118,7 +118,28 @@
           document.getElementById('summary-link').href = `/org/${orgId}/summary`;
           document.getElementById('refresh-link').href = `/org/${orgId}?refresh=1`;
           document.getElementById('savings-link').href = `/org/${orgId}/download_monthly_savings_csv`;
-          document.getElementById('full-cluster-details-btn').href = `/org/${orgId}/full_cluster_details`;
+          document.getElementById('full-cluster-details-btn').addEventListener('click', () => {
+  try {
+    const detailsTable = document.querySelector('#detailsArea table');
+    if (!detailsTable) {
+      alert('Please select a cluster first');
+      return;
+    }
+    const currentClusterId = detailsTable.querySelector('tr:first-child td').textContent;
+    if (!currentClusterId) {
+      alert('No cluster ID found');
+      return;
+    }
+    if (!data?.org?.key) {
+      alert('API key not available');
+      return;
+    }
+    window.open(`http://localhost:3000/?clusterid=${currentClusterId}&apikey=${data.org.key}`, '_blank');
+  } catch (error) {
+    console.error('Error opening full cluster details:', error);
+    alert('Error opening full cluster details');
+  }
+});
 
           
           // Populate clusters table
