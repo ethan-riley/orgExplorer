@@ -8,7 +8,8 @@ const morgan = require('morgan');
 
 const app = express();
 const port = 3663;
-const API_BASE_URL = 'http://localhost:7667';
+// const API_BASE_URL = 'http://localhost:7667';
+const API_BASE_URL = 'https://api.tech-sphere.pro';
 
 // Middleware
 app.use(express.json());
