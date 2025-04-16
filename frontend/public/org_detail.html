@@ -125,29 +125,46 @@
       alert('Please select a cluster first');
       return;
     }
-    // Get cluster ID from the details table (look for "Cluster ID" row)
+    // Debug: Log the entire details table
+    console.log('Details table content:', detailsTable.innerHTML);
+
+    // Get cluster ID from the details table
     const clusterIdRow = Array.from(detailsTable.querySelectorAll('tr')).find(tr => 
       tr.textContent.includes('Cluster ID')
     );
     if (!clusterIdRow) {
+      console.error('Cluster ID row not found in:', detailsTable);
       alert('Could not find Cluster ID row in details table');
       return;
     }
+    
     const clusterIdCell = clusterIdRow.querySelector('td:last-child');
     if (!clusterIdCell) {
+      console.error('Cluster ID cell not found in row:', clusterIdRow);
       alert('Could not find cluster ID value in table');
       return;
     }
+    
     const currentClusterId = clusterIdCell.textContent.trim();
+    console.log('Extracted Cluster ID:', currentClusterId);
+    
     if (!currentClusterId || currentClusterId.includes('%') || currentClusterId.length < 3) {
+      console.error('Invalid Cluster ID format:', currentClusterId);
       alert('Invalid cluster ID: ' + currentClusterId);
       return;
     }
+    
     if (!data?.org?.key) {
+      console.error('API key missing in data:', data);
       alert('API key not available');
       return;
     }
-    window.open(`http://localhost:3000/?clusterid=${currentClusterId}&apikey=${data.org.key}`, '_blank');
+    
+    const generatedUrl = `http://localhost:3000/?clusterid=${currentClusterId}&apikey=${data.org.key}`;
+    console.log('Generated URL:', generatedUrl);
+    console.log('Full data.org:', data.org);
+    
+    window.open(generatedUrl, '_blank');
   } catch (error) {
     console.error('Error opening full cluster details:', error);
     alert('Error opening full cluster details');
