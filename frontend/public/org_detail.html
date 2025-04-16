@@ -210,16 +210,38 @@
     // Function to load cluster details
     async function loadDetails(clusterId) {
       try {
+        // Show loading state
+        document.getElementById("detailsArea").innerHTML = `
+          <div class="loading-overlay" style="position:relative;min-height:200px;">
+            <div class="position-absolute top-50 start-50 translate-middle text-center">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <p class="mt-3">Loading cluster details...</p>
+            </div>
+          </div>`;
+        
+        // Disable button during load
+        document.getElementById('full-cluster-details-btn').classList.add('disabled');
+        
         const response = await fetch(`/api/org/${orgId}/cluster/${clusterId}`);
         const data = await response.json();
         
         if (data.details) {
           let html = "<table class='table table-bordered'>";
           for (let key in data.details) {
-            html += `<tr><th>${key}</th><td>${data.details[key]}</td></tr>`;
+            const value = data.details[key];
+            html += `<tr><th>${key}</th><td>${
+              key.toLowerCase().includes('extended support') && value === 'Yes' 
+                ? `<i class="fas fa-exclamation-triangle text-warning me-2"></i>${value}`
+                : value
+            }</td></tr>`;
           }
           html += "</table>";
           document.getElementById("detailsArea").innerHTML = html;
+          
+          // Re-enable button after load
+          document.getElementById('full-cluster-details-btn').classList.remove('disabled');
         } else {
           document.getElementById("detailsArea").innerHTML = `
             <div class="alert alert-warning">No details available for this cluster.</div>`;
