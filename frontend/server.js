@@ -10,6 +10,8 @@ const app = express();
 const port = 3663;
 // const API_BASE_URL = 'http://localhost:7667';
 const API_BASE_URL = 'https://api.tech-sphere.pro';
+const API_API_HEADER = "274a7c568bf54ebca676fd9313360c4c";
+
 
 // Middleware
 app.use(express.json());
@@ -30,7 +32,12 @@ app.use((req, res, next) => {
 // Routes
 app.get('/', async (req, res) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/`);
+      const response = await axios.get(`${API_BASE_URL}/`, {
+          headers: {
+               "Authorization": API_API_HEADER
+          }
+      });
+      console.log(response);
     res.render('index', { orgs: response.data.orgs });
   } catch (error) {
     console.error('Error fetching organizations:', error);
@@ -69,7 +76,11 @@ app.get('/api/org/:id', async (req, res) => {
   try {
     const orgId = req.params.id;
     const refresh = req.query.refresh ? '?refresh=1' : '';
-    const response = await axios.get(`${API_BASE_URL}/org/${orgId}${refresh}`);
+    const response = await axios.get(`${API_BASE_URL}/org/${orgId}${refresh}`, {
+           headers: {
+                "Authorization": API_API_HEADER
+           }
+    });
     res.json(response.data);
   } catch (error) {
     console.error('Error fetching organization data:', error);
@@ -81,7 +92,11 @@ app.get('/api/org/:id', async (req, res) => {
 app.get('/orgs/edit/:id', async (req, res) => {
   try {
     const orgId = req.params.id;
-    const response = await axios.get(`${API_BASE_URL}/orgs/edit/${orgId}`);
+    const response = await axios.get(`${API_BASE_URL}/orgs/edit/${orgId}`, {
+           headers: {
+                "Authorization": API_API_HEADER
+           }
+    });
     if (response.data && response.data.org) {
       res.render('edit_org_form', {
         org: response.data.org,
@@ -118,7 +133,9 @@ app.get('/api/org/:id/summary', async (req, res) => {
 
     // Make the request with a longer timeout
     const response = await axios.get(`${API_BASE_URL}/org/${orgId}/summary${refresh}`, {
-      timeout: 300000 // 30 seconds timeout
+           headers: {
+                "Authorization": API_API_HEADER
+           }
     });
 
     // Log the summary data structure for debugging
@@ -169,7 +186,11 @@ app.get('/api/org/:id/summary', async (req, res) => {
 app.get('/org/:orgId/cluster/:clusterId', async (req, res) => {
   try {
     const { orgId, clusterId } = req.params;
-    const response = await axios.get(`${API_BASE_URL}/org/${orgId}/cluster/${clusterId}`);
+    const response = await axios.get(`${API_BASE_URL}/org/${orgId}/cluster/${clusterId}`, {
+           headers: {
+                "Authorization": API_API_HEADER
+           }
+    });
     res.json(response.data);
   } catch (error) {
     console.error('Error fetching cluster details:', error);
@@ -181,7 +202,11 @@ app.get('/org/:orgId/cluster/:clusterId', async (req, res) => {
 app.get('/api/org/:orgId/cluster/:clusterId', async (req, res) => {
   try {
     const { orgId, clusterId } = req.params;
-    const response = await axios.get(`${API_BASE_URL}/org/${orgId}/cluster/${clusterId}`);
+    const response = await axios.get(`${API_BASE_URL}/org/${orgId}/cluster/${clusterId}`, {
+           headers: {
+                "Authorization": API_API_HEADER
+           }
+    });
     res.json(response.data);
   } catch (error) {
     console.error('Error fetching cluster details:', error);
@@ -217,7 +242,11 @@ app.post('/orgs/edit/:id', async (req, res) => {
 app.get('/org/disable/:id', async (req, res) => {
   try {
     const orgId = req.params.id;
-    await axios.get(`${API_BASE_URL}/org/disable/${orgId}`);
+    await axios.get(`${API_BASE_URL}/org/disable/${orgId}`, {
+           headers: {
+                "Authorization": API_API_HEADER
+           }
+    });
     res.redirect('/');
   } catch (error) {
     console.error('Error disabling organization:', error);
@@ -228,7 +257,11 @@ app.get('/org/disable/:id', async (req, res) => {
 app.get('/org/enable/:id', async (req, res) => {
   try {
     const orgId = req.params.id;
-    await axios.get(`${API_BASE_URL}/org/enable/${orgId}`);
+    await axios.get(`${API_BASE_URL}/org/enable/${orgId}`, {
+           headers: {
+                "Authorization": API_API_HEADER
+           }
+    });
     res.redirect('/');
   } catch (error) {
     console.error('Error enabling organization:', error);
@@ -243,7 +276,12 @@ app.get('/org/:id/download_csv', async (req, res) => {
 
     // Get Organization Name
     const url2 = `${API_BASE_URL}/org/${orgId}${refresh ? '?refresh=1' : ''}`;
-    const response2 = await axios.get(url2);
+    const response2 = await axios.get(url2, {
+           headers: {
+                "Authorization": API_API_HEADER
+           }
+    });
+    console.log(response2);
     const orgFullData = response2.data;
     const orgData = orgFullData.org;
     const orgName = orgData.org;
@@ -253,7 +291,11 @@ app.get('/org/:id/download_csv', async (req, res) => {
     // Make a server-side request to your CSV-generating endpoint
     // (ensure that this endpoint returns text/plain or text/csv)
     const apiUrl = `${API_BASE_URL}/org/${orgId}/download_csv`;
-    const response = await axios.get(apiUrl, { responseType: 'text' });
+    const response = await axios.get(apiUrl, { responseType: 'text',
+           headers: {
+                "Authorization": API_API_HEADER
+           }
+    });
     const data = await response;
     const csvData = response.data;
 
@@ -275,13 +317,21 @@ app.get('/org/:id/download_monthly_savings_csv', async (req, res) => {
 
     // Get Organization Name
     const url2 = `${API_BASE_URL}/org/${orgId}${refresh ? '?refresh=1' : ''}`;
-    const response2 = await axios.get(url2);
+    const response2 = await axios.get(url2, {
+           headers: {
+                "Authorization": API_API_HEADER
+           }
+    });
     const orgFullData = response2.data;
     const orgData = orgFullData.org;
     const orgName = orgData.org;
 
     const apiUrl = `${API_BASE_URL}/org/${orgId}/download_monthly_savings_csv`;
-    const getFile = await axios.get(apiUrl, { responseType: 'stream' });
+    const getFile = await axios.get(apiUrl, { responseType: 'stream',
+           headers: {
+                "Authorization": API_API_HEADER
+           }
+    });
     res.setHeader('Content-Disposition', `attachment; filename="${orgName}-savings-analysis.zip"`);
     res.setHeader('Content-Type', 'application/zip');
     getFile.data.pipe(res);

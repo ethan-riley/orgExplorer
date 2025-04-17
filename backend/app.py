@@ -15,13 +15,23 @@ import sqlite3, os, csv, datetime, json, requests, statistics
 import pandas as pd
 from flask import Flask, request, redirect, url_for, jsonify, flash, send_file
 from gevent.pywsgi import WSGIServer
+from app_security import APISecurityManager, flask_api_security_middleware, require_permission
 
 # Import the monthly savings report module.
 import monthlySavingsReport as msr
 import json
 
+# Initialize the API Sec Manager
+security_manager = APISecurityManager(
+    api_keys_file="api_keys.json",
+    env_key_name="EXPLORER_API_KEY",
+    token_expiry=315360000 # 24 hours
+)
 app = Flask(__name__)
-app.secret_key = "replace_with_a_secure_secret"
+
+# Apply the Flask API security middleware
+flask_api_security_middleware(app, security_manager)
+
 
 DATABASE = "orgs.db"
 
@@ -586,6 +596,7 @@ def fetch_full_cluster_details(api_key, cluster_id, org_dir="."):
 # Flask Routes (JSON-only endpoints)
 # --------------------------
 @app.route("/orgs/edit/<int:org_id>")
+@require_permission('read')
 def edit_org(org_id):
     org_row = get_org_by_id(org_id)
     if not org_row:
@@ -595,16 +606,19 @@ def edit_org(org_id):
     return jsonify(org=org)
 
 @app.route("/org/enable/<int:org_db_id>")
+@require_permission('read')
 def enable_org_route(org_db_id):
     enable_org(org_db_id)
     return jsonify(message="Organization re-enabled successfully")
 
 @app.route("/")
+@require_permission('read')
 def index():
     orgs = get_all_orgs()
     return jsonify(orgs=orgs)
 
 @app.route("/orgs", methods=["GET", "POST"])
+@require_permission('read')
 def manage_orgs():
     if request.method == "POST":
         action = request.form.get("action")
@@ -634,11 +648,13 @@ def manage_orgs():
         return jsonify(orgs=orgs_list, edit_org=edit_org_data)
 
 @app.route("/org/disable/<int:org_db_id>")
+@require_permission('read')
 def disable_org_route(org_db_id):
     disable_org(org_db_id)
     return jsonify(message="Organization disabled successfully")
 
 @app.route("/org/<int:org_db_id>")
+@require_permission('read')
 def org_clusters(org_db_id):
     org = get_org_by_id(org_db_id)
     if not org:
@@ -654,6 +670,7 @@ def org_clusters(org_db_id):
     return jsonify(org=org, clusters=clusters)
 
 @app.route("/org/<int:org_db_id>/cluster/<cluster_id>")
+@require_permission('read')
 def cluster_details(org_db_id, cluster_id):
     org = get_org_by_id(org_db_id)
     if not org:
@@ -662,6 +679,7 @@ def cluster_details(org_db_id, cluster_id):
     return jsonify(details=details)
 
 @app.route("/org/<int:org_db_id>/summary")
+@require_permission('read')
 def org_summary(org_db_id):
     org = get_org_by_id(org_db_id)
     if not org:
@@ -704,6 +722,7 @@ def org_summary(org_db_id):
     return jsonify(org=org, summary=summary)
 
 @app.route("/org/<int:org_db_id>/download_csv")
+@require_permission('read')
 def download_csv(org_db_id):
     org = get_org_by_id(org_db_id)
     if not org:
@@ -747,6 +766,7 @@ def get_csv(org_db_id):
 
 #
 @app.route("/org/<int:org_db_id>/monthly_savings", methods=["GET"])
+@require_permission('read')
 def monthly_savings(org_db_id):
     """
     Returns the monthly savings report as JSON.
@@ -791,6 +811,7 @@ def monthly_savings(org_db_id):
         return jsonify(error=f"Failed to generate monthly savings report: {str(e)}"), 500
 
 @app.route("/org/<int:org_db_id>/download_monthly_savings_csv", methods=["GET"])
+@require_permission('read')
 def download_monthly_savings_csv(org_db_id):
     """
     Generates CSV files for the monthly savings report based on cached report data,
@@ -848,6 +869,25 @@ def download_monthly_savings_csv(org_db_id):
         return jsonify(error="Zip file not found."), 500
 
     return send_file(zip_filename, as_attachment=True)
+
+@app.route("/public/manage-keys", methods=["GET", "POST"])
+def manage_keys():
+    if request.method == "POST":
+        action = request.form.get("action")
+        role = request.form.get("role", "read")
+        user_id = request.form.get("user_id")
+
+        if action == "generate":
+            key = security_manager.generate_key(role, user_id)
+            return jsonify({"api_key": key, "role": role})
+        elif action == "revoke":
+            key = request.form.get("key")
+            success = security_manager.revoke_key(key)
+            return jsonify({"success": success})
+
+    # For GET requests, return the key management form or listing
+    keys = security_manager.list_keys(include_hash=False)
+    return jsonify({"keys": keys})
 
 if __name__ == "__main__":
     # app.run(debug=True, port=7667)

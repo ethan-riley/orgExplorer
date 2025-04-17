@@ -1,0 +1,55 @@
+{
+    "keys": {
+        "e0c6e712bc1a75e8d2a673f15af0c9cc1e2eb8392f4c907ee481994cc86c1afc": {
+            "role": "admin",
+            "user_id": "user_4cc97247",
+            "created": 1744901296.6159427,
+            "last_used": null
+        },
+        "993abd203ac4851cb064f5888d830e8261b43a6633023c3e53b206343de76d8d": {
+            "role": "admin",
+            "user_id": "admin_user",
+            "created": 1744902171.8948264,
+            "last_used": null
+        },
+        "1dfb9b8c04ae750e777e1c1f20cef51b4ffa4b51fc00fe1598636dc6c0e77c31": {
+            "role": "read",
+            "user_id": "org_explorer",
+            "created": 1744902300.5117,
+            "last_used": null
+        },
+        "02899a234d1a349a8301dd3c800bd11197fc33bbb81f4d2e3f39e831a3187d09": {
+            "role": "read",
+            "user_id": "org_explorer",
+            "created": 1744903208.1947496,
+            "last_used": null
+        },
+        "3f3421da189710c7a6d0c7956035c65b7abfebadd6b756efbbcd7f879dce54aa": {
+            "role": "admin",
+            "user_id": "org_admin",
+            "created": 1744903219.2534142,
+            "last_used": 1744908016.8419852
+        }
+    },
+    "roles": {
+        "admin": {
+            "permissions": [
+                "*"
+            ]
+        },
+        "read": {
+            "permissions": [
+                "get",
+                "list"
+            ]
+        },
+        "write": {
+            "permissions": [
+                "get",
+                "list",
+                "create",
+                "update"
+            ]
+        }
+    }
+}
