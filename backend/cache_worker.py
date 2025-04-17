@@ -128,9 +128,10 @@ def get_csv(org_id):
     org_folder = os.path.join("outputs", org["org"].replace(" ", "_"))
     csv_file = os.path.join(org_folder, "full_cluster_details.csv")
     
-    from app import get_cache, fetch_full_cluster_info, set_cache
+    # Remove the circular import:
+    # from app import get_cache, fetch_full_cluster_info, set_cache
     
-    # Check if we have the data in cache
+    # Instead, use the functions defined in this file:
     full_details = get_cache(org_id, "full_cluster_details")
     if full_details is not None:
         import pandas as pd

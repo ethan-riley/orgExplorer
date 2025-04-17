@@ -37,8 +37,12 @@ app = Flask(__name__)
 # Apply the Flask API security middleware
 flask_api_security_middleware(app, security_manager)
 
-
 DATABASE = "orgs.db"
+
+org_base_dir = os.path.join(os.path.dirname(__file__), "outputs")
+temp_dir = os.path.join(os.path.dirname(__file__), "temp")
+os.makedirs(org_base_dir, exist_ok=True)
+os.makedirs(temp_dir, exist_ok=True)
 
 # ----------------------------
 # Database & Cache Helper Functions
@@ -53,7 +57,7 @@ def start_background_worker():
         print("Background worker started")
     except Exception as e:
         print(f"Error starting background worker: {e}")
-        
+
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
@@ -881,57 +885,60 @@ def monthly_savings(org_db_id):
 @app.route("/org/<int:org_db_id>/download_monthly_savings_csv", methods=["GET"])
 @require_permission('read')
 def download_monthly_savings_csv(org_db_id):
-    """
-    Either returns the cached zip file for download or starts a background job
-    to generate it and returns status information.
-    """
-    CACHE_KEY_MS = "monthly_savings_report"
-    
-    org = get_org_by_id(org_db_id)
-    if not org:
-        return jsonify(error="Organization not found"), 404
-    
-    # Check if job status is requested
-    job_id = request.args.get('job_id')
-    if job_id:
-        # Return the status of the job
-        job_status = get_job_status(int(job_id))
-        if not job_status:
-            return jsonify(error="Job not found"), 404
-        return jsonify(job_status)
-    
-    org_folder = os.path.join("outputs", org["org"].replace(" ", "_"))
-    os.makedirs(org_folder, exist_ok=True)
-    org_name = org["org"]
-    zip_filename = os.path.join(org_folder, f"{org_name}_monthly_savings_report.zip")
-    
-    # Check if cached report exists
-    cached_report = get_cache(org_db_id, CACHE_KEY_MS)
-    
-    # Check if we should use the cached version or force refresh
-    force_refresh = request.args.get('refresh', 'false').lower() == 'true'
-    
-    if cached_report and not force_refresh and os.path.exists(zip_filename):
-        # Return the cached zip file
-        return send_file(zip_filename, as_attachment=True)
-    
-    # Check if there are already pending jobs for this org
-    if check_pending_jobs(org_db_id, "monthly_savings_report"):
-        # There's already a job in progress
+    try:
+        CACHE_KEY_MS = "monthly_savings_report"
+        org = get_org_by_id(org_db_id)
+        if not org:
+            return jsonify(error="Organization not found"), 404
+        
+        # Check if job status is requested
+        job_id = request.args.get('job_id')
+        if job_id:
+            # Return the status of the job
+            job_status = get_job_status(int(job_id))
+            if not job_status:
+                return jsonify(error="Job not found"), 404
+            return jsonify(job_status)
+        
+        org_folder = os.path.join("outputs", org["org"].replace(" ", "_"))
+        os.makedirs(org_folder, exist_ok=True)
+        org_name = org["org"]
+        zip_filename = os.path.join(org_folder, f"{org_name}_monthly_savings_report.zip")
+        
+        # Check if cached report exists
+        cached_report = get_cache(org_db_id, CACHE_KEY_MS)
+        
+        # Check if we should use the cached version or force refresh
+        force_refresh = request.args.get('refresh', 'false').lower() == 'true'
+        
+        if cached_report and not force_refresh and os.path.exists(zip_filename):
+            # Return the cached zip file
+            return send_file(zip_filename, as_attachment=True)
+        
+        # Check if there are already pending jobs for this org
+        if check_pending_jobs(org_db_id, "monthly_savings_report"):
+            # There's already a job in progress
+            return jsonify({
+                "status": "processing",
+                "message": "A job is already in progress to generate the monthly savings report"
+            })
+        
+        # Queue a new job to generate the report
+        job_id = queue_job(org_db_id, "monthly_savings_report")
+        
+        # Return information about the queued job
         return jsonify({
             "status": "processing",
-            "message": "A job is already in progress to generate the monthly savings report"
+            "message": "Monthly savings report generation has been queued",
+            "jobId": job_id
         })
-    
-    # Queue a new job to generate the report
-    job_id = queue_job(org_db_id, "monthly_savings_report")
-    
-    # Return information about the queued job
-    return jsonify({
-        "status": "processing",
-        "message": "Monthly savings report generation has been queued",
-        "jobId": job_id
-    })
+    except Exception as e:
+        # Log the full error
+        import traceback
+        print(f"Error in download_monthly_savings_csv: {str(e)}")
+        print(traceback.format_exc())
+        # Return a useful error message
+        return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
 
 # Add a new route to check job status
 @app.route("/api/job-status/<int:job_id>", methods=["GET"])
