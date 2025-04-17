@@ -63,7 +63,7 @@
           </div>
           <div class="card-body">
             <input type="text" id="clusterFilter" placeholder="Search by Cluster ID, Name, or Account ID" class="form-control mb-3">
-            
+
             <div id="clusters-container">
               <div class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
@@ -119,48 +119,56 @@
           document.getElementById('refresh-link').href = `/org/${orgId}?refresh=1`;
           document.getElementById('savings-link').href = `/org/${orgId}/download_monthly_savings_csv`;
           document.getElementById('full-cluster-details-btn').addEventListener('click', () => {
-  try {
-    const detailsTable = document.querySelector('#detailsArea table');
-    if (!detailsTable) {
-      alert('Please select a cluster first');
-      return;
-    }
-    // Get cluster ID from the details table
-    const clusterIdRow = Array.from(detailsTable.querySelectorAll('tr')).find(tr => 
-      tr.textContent.includes('ClusterID')
-    );
-    if (!clusterIdRow) {
-      alert('Could not find Cluster ID row in details table');
-      return;
-    }
-    
-    const clusterIdCell = clusterIdRow.querySelector('td:last-child');
-    if (!clusterIdCell) {
-      alert('Could not find cluster ID value in table');
-      return;
-    }
-    
-    const currentClusterId = clusterIdCell.textContent.trim();
-    if (!currentClusterId || currentClusterId.includes('%') || currentClusterId.length < 3) {
-      alert('Invalid cluster ID: ' + currentClusterId);
-      return;
-    }
-    
-    if (!data?.org?.key) {
-      alert('API key not available');
-      return;
-    }
-    
-    const generatedUrl = `http://localhost:3000/?clusterid=${currentClusterId}&apikey=${data.org.key}`;
-    
-    window.open(generatedUrl, '_blank');
-  } catch (error) {
-    console.error('Error opening full cluster details:', error);
-    alert('Error opening full cluster details');
-  }
-});
+            try {
+              const detailsTable = document.querySelector('#detailsArea table');
+              if (!detailsTable) {
+                alert('Please select a cluster first');
+                return;
+              }
+              // Get cluster ID and Name from the details table
+              const clusterIdRow = Array.from(detailsTable.querySelectorAll('tr')).find(tr =>
+                tr.textContent.includes('ClusterID')
+              );
+              const clusterNameRow = Array.from(detailsTable.querySelectorAll('tr')).find(tr =>
+                tr.textContent.includes('Cluster Name')
+              );
+              if (!clusterIdRow || !clusterNameRow) {
+                alert('Could not find Cluster ID or Name row in details table');
+                return;
+              }
 
-          
+              const clusterIdCell = clusterIdRow.querySelector('td:last-child');
+              const clusterNameCell = clusterNameRow.querySelector('td:last-child');
+              if (!clusterIdCell || !clusterNameCell) {
+                alert('Could not find cluster ID or Name value in table');
+                return;
+              }
+
+              const currentClusterId = clusterIdCell.textContent.trim();
+              const currentClusterName = clusterNameCell.textContent.trim();
+              if (!currentClusterId || currentClusterId.includes('%') || currentClusterId.length < 3) {
+                alert('Invalid cluster ID: ' + currentClusterId);
+                return;
+              }
+              if (!currentClusterName) {
+                alert('Invalid cluster Name: ' + currentClusterName);
+                return;
+              }
+
+              if (!data?.org?.key) {
+                alert('API key not available');
+                return;
+              }
+
+              const generatedUrl = `http://localhost:3000/?clusterid=${currentClusterId}&clustername=${currentClusterName}&apikey=${data.org.key}`;
+
+              window.open(generatedUrl, '_blank');
+            } catch (error) {
+              console.error('Error opening full cluster details:', error);
+              alert('Error opening full cluster details');
+            }
+          });
+
           // Populate clusters table
           if (data.clusters && data.clusters.length > 0) {
             let html = `
@@ -169,7 +177,7 @@
                   <thead>
                     <tr>
                       <th>Cluster ID</th>
-                      <th>Account ID</th>
+                      <th>Account ID</th>                
                       <th>Cluster Name</th>
                       <th>Region</th>
                     </tr>
@@ -263,8 +271,15 @@
         const value = this.value.toLowerCase();
         const rows = document.querySelectorAll('table tbody tr');
         rows.forEach(row => {
-          const text = row.textContent.toLowerCase();
-          row.style.display = text.includes(value) ? '' : 'none';
+          const clusterId = row.cells[0].textContent.toLowerCase();
+          const accountId = row.cells[1].textContent.toLowerCase();
+          const clusterName = row.cells[2].textContent.toLowerCase();
+
+          const isVisible = clusterId.includes(value) ||
+                            accountId.includes(value) ||
+                            clusterName.includes(value);
+
+          row.style.display = isVisible ? '' : 'none';
         });
       });
     });
