@@ -62,18 +62,18 @@ def test_db():
                 status TEXT DEFAULT 'pending'
             )
         """)
-        
+
         # Test inserting a record
         conn.execute(
             "INSERT INTO job_queue_test (org_id, job_type) VALUES (?, ?)",
             (1, "test_job")
         )
         conn.commit()
-        
+
         # Test retrieving the record
         row = conn.execute("SELECT * FROM job_queue_test").fetchone()
         conn.close()
-        
+
         return jsonify({"status": "success", "message": "Database operations successful", "data": dict(row)})
     except Exception as e:
         import traceback
@@ -276,7 +276,7 @@ def check_pending_jobs(org_id, job_type):
         (org_id, job_type)
     ).fetchone()
     conn.close()
-    return r
+    return row is not None
 
 # ------------------------------------------
 # API Helper Functions (Cast.ai API routines)
@@ -924,12 +924,12 @@ def download_monthly_savings_csv(org_db_id):
     try:
         print(f"Starting download_monthly_savings_csv for org_id={org_db_id}")
         CACHE_KEY_MS = "monthly_savings_report"
-        
+
         org = get_org_by_id(org_db_id)
         if not org:
             print(f"Organization {org_db_id} not found")
             return jsonify(error="Organization not found"), 404
-        
+
         # Check if job status is requested
         job_id = request.args.get('job_id')
         if job_id:
@@ -938,22 +938,22 @@ def download_monthly_savings_csv(org_db_id):
             if not job_status:
                 return jsonify(error="Job not found"), 404
             return jsonify(job_status)
-        
+
         org_folder = os.path.join("outputs", org["org"].replace(" ", "_"))
         os.makedirs(org_folder, exist_ok=True)
         org_name = org["org"]
         zip_filename = os.path.join(org_folder, f"{org_name}_monthly_savings_report.zip")
-        
+
         # Check if cached report exists
         cached_report = get_cache(org_db_id, CACHE_KEY_MS)
-        
+
         # Check if we should use the cached version or force refresh
         force_refresh = request.args.get('refresh', 'false').lower() == 'true'
-        
+
         if cached_report and not force_refresh and os.path.exists(zip_filename):
             # Return the cached zip file
             return send_file(zip_filename, as_attachment=True)
-        
+
         # Check if there are already pending jobs for this org
         if check_pending_jobs(org_db_id, "monthly_savings_report"):
             # There's already a job in progress
@@ -961,10 +961,10 @@ def download_monthly_savings_csv(org_db_id):
                 "status": "processing",
                 "message": "A job is already in progress to generate the monthly savings report"
             })
-        
+
         # Queue a new job to generate the report
         job_id = queue_job(org_db_id, "monthly_savings_report")
-        
+
         # Return information about the queued job
         return jsonify({
             "status": "processing",
@@ -986,7 +986,7 @@ def check_job_status(job_id):
     job_status = get_job_status(job_id)
     if not job_status:
         return jsonify(error="Job not found"), 404
-    
+
     # Prepare a more user-friendly response
     status = job_status['status']
     response = {
@@ -994,7 +994,7 @@ def check_job_status(job_id):
         "jobId": job_id,
         "message": f"Job is {status}"
     }
-    
+
     if status == 'completed':
         org_id = job_status['org_id']
         org = get_org_by_id(org_id)
@@ -1002,7 +1002,7 @@ def check_job_status(job_id):
             response["downloadUrl"] = f"/api/download-report/{org_id}"
     elif status == 'error':
         response["error"] = job_status.get('error', 'Unknown error')
-        
+
     return jsonify(response)
 
 # Add a new route to download a completed report
@@ -1013,13 +1013,13 @@ def download_report(org_id):
     org = get_org_by_id(org_id)
     if not org:
         return jsonify(error="Organization not found"), 404
-    
+
     org_folder = os.path.join("outputs", org["org"].replace(" ", "_"))
     zip_filename = os.path.join(org_folder, f"{org['org']}_monthly_savings_report.zip")
-    
+
     if not os.path.exists(zip_filename):
         return jsonify(error="Report file not found"), 404
-    
+
     return send_file(zip_filename, as_attachment=True)
 
 # Add a new route to trigger manual cache refresh (admin only)
@@ -1030,12 +1030,12 @@ def admin_refresh_cache(org_id):
     org = get_org_by_id(org_id)
     if not org:
         return jsonify(error="Organization not found"), 404
-    
+
     job_type = request.args.get('type', 'monthly_savings_report')
-    
+
     # Queue a job
     job_id = queue_job(org_id, job_type)
-    
+
     return jsonify({
         "message": f"Cache refresh for {job_type} queued successfully",
         "jobId": job_id
@@ -1047,16 +1047,16 @@ def admin_refresh_cache(org_id):
 def admin_refresh_all_caches():
     """Admin endpoint to trigger cache refresh for all organizations"""
     job_type = request.args.get('type', 'monthly_savings_report')
-    
+
     # Get all organizations
     orgs = get_all_orgs()
     job_ids = []
-    
+
     for org in orgs:
         if org.get('enabled', 1) == 1:  # Only refresh for enabled orgs
             job_id = queue_job(org['id'], job_type)
             job_ids.append({"org_id": org['id'], "job_id": job_id})
-    
+
     return jsonify({
         "message": f"Cache refresh for {job_type} queued for all organizations",
         "jobs": job_ids
