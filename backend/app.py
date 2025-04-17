@@ -43,7 +43,17 @@ DATABASE = "orgs.db"
 # ----------------------------
 # Database & Cache Helper Functions
 # ----------------------------
-
+def start_background_worker():
+    """Import and start the cache worker in a separate thread"""
+    try:
+        import cache_worker
+        worker_thread = threading.Thread(target=cache_worker.worker_process)
+        worker_thread.daemon = True
+        worker_thread.start()
+        print("Background worker started")
+    except Exception as e:
+        print(f"Error starting background worker: {e}")
+        
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
@@ -231,17 +241,6 @@ def check_pending_jobs(org_id, job_type):
     ).fetchone()
     conn.close()
     return r
-
-def start_background_worker():
-    """Import and start the cache worker in a separate thread"""
-    try:
-        import cache_worker
-        worker_thread = threading.Thread(target=cache_worker.worker_process)
-        worker_thread.daemon = True
-        worker_thread.start()
-        print("Background worker started")
-    except Exception as e:
-        print(f"Error starting background worker: {e}")
 
 # ------------------------------------------
 # API Helper Functions (Cast.ai API routines)
