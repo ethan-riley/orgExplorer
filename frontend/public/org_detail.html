@@ -281,7 +281,110 @@
           row.style.display = isVisible ? '' : 'none';
         });
       });
+      document.getElementById('savings-link').addEventListener('click', function(e) {
+        e.preventDefault();
+        startSavingsExport(orgId);
     });
+    });
+// Function to start the export process in the background
+async function startSavingsExport(orgId) {
+    try {
+      // Show processing notification
+      showNotification('Export Started', 'Your savings analysis is being processed. You can continue using the application.', 'warning');
+      
+      // Start the export process
+      const response = await fetch(`/org/${orgId}/download_monthly_savings_csv`);
+      const data = await response.json();
+      
+      if (data.status === 'processing' && data.jobId) {
+        // Start polling for job status
+        pollJobStatus(data.jobId);
+      } else {
+        showNotification('Error', 'Failed to start export process', 'error');
+      }
+    } catch (error) {
+      console.error('Error starting export:', error);
+      showNotification('Error', 'Failed to start export', 'error');
+    }
+  }
+  
+  // Function to poll job status
+  function pollJobStatus(jobId) {
+    const intervalId = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/job-status/${jobId}`);
+        const data = await response.json();
+        
+        if (data.status === 'completed' && data.exportId) {
+          clearInterval(intervalId);
+          
+          // Show success notification
+          showNotification('Export Complete', 'Your savings analysis is ready for download', 'success', () => {
+            window.location.href = `/api/download/${jobId}`;
+          });
+          
+          // Auto download
+          setTimeout(() => {
+            window.location.href = `/api/download/${jobId}`;
+          }, 1000);
+        } else if (data.status === 'error') {
+          clearInterval(intervalId);
+          showNotification('Export Failed', data.error || 'Unknown error occurred', 'error');
+        }
+        // If still processing, continue polling
+        
+      } catch (error) {
+        console.error('Error checking job status:', error);
+        clearInterval(intervalId);
+        showNotification('Error', 'Failed to check export status', 'error');
+      }
+    }, 3000); // Check every 3 seconds
+  }
+  
+  // Function to show notifications
+  function showNotification(title, message, type = 'success', onClick = null) {
+    // Remove any existing notifications
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notification => {
+      notification.remove();
+    });
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+      <h4>${title}</h4>
+      <p>${message}</p>
+      <button class="close-btn">×</button>
+    `;
+    
+    // Add click handler if provided
+    if (onClick) {
+      notification.addEventListener('click', (e) => {
+        if (!e.target.matches('.close-btn')) {
+          onClick();
+        }
+      });
+    }
+    
+    // Add close button handler
+    notification.querySelector('.close-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      notification.remove();
+    });
+    
+    // Add to document
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 10 seconds for success/info notifications
+    if (type !== 'error') {
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          notification.remove();
+        }
+      }, 10000);
+    }
+  }
   </script>
 </body>
 </html>

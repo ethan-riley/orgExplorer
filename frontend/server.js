@@ -12,6 +12,17 @@ const port = 3663;
 const API_BASE_URL = 'https://api.tech-sphere.pro';
 const API_API_HEADER = "274a7c568bf54ebca676fd9313360c4c";
 
+const fs = require('fs');
+const path = require('path');
+
+// Create temp directory if it doesn't exist
+const tempDir = path.join(__dirname, 'temp');
+if (!fs.existsSync(tempDir)) {
+  fs.mkdirSync(tempDir);
+}
+
+// Job status storage
+const jobStatus = {};
 
 // Middleware
 app.use(express.json());
@@ -313,52 +324,130 @@ app.get('/org/:id/download_csv', async (req, res) => {
 app.get('/org/:id/download_monthly_savings_csv', async (req, res) => {
   try {
     const orgId = req.params.id;
-    const refresh = req.query.refresh ? '?refresh=1' : '';
-
-    // Get Organization Name
-    const url2 = `${API_BASE_URL}/org/${orgId}${refresh ? '?refresh=1' : ''}`;
-    const response2 = await axios.get(url2, {
-           headers: {
-                "Authorization": API_API_HEADER
-           }
+    
+    // Create a job ID
+    const jobId = `savings-export-${orgId}-${Date.now()}`;
+    
+    // Initialize job status
+    jobStatus[jobId] = {
+      status: 'processing',
+      orgId: orgId,
+      exportId: null,
+      error: null,
+      created: Date.now()
+    };
+    
+    // Send immediate response with job ID
+    res.json({
+      status: 'processing',
+      message: 'Export started. You will be notified when complete.',
+      jobId: jobId
     });
-    const orgFullData = response2.data;
-    const orgData = orgFullData.org;
-    const orgName = orgData.org;
-
-    const apiUrl = `${API_BASE_URL}/org/${orgId}/download_monthly_savings_csv`;
-    const getFile = await axios.get(apiUrl, { responseType: 'stream',
-           headers: {
-                "Authorization": API_API_HEADER
-           }
-    });
-    res.setHeader('Content-Disposition', `attachment; filename="${orgName}-savings-analysis.zip"`);
-    res.setHeader('Content-Type', 'application/zip');
-    getFile.data.pipe(res);
+    
+    // Process the export in the background
+    processSavingsExport(orgId, jobId);
+    
   } catch (error) {
-    console.error("Error fetching CSV from summary endpoint:", error);
-    res.status(500).send("Error generating CSV.");
+    console.error('Error starting export:', error);
+    res.status(500).json({ error: 'Failed to start export process' });
   }
 });
 
-// app.get('/org/:id/full_cluster_details', async (req, res) => {
-//   try {
-//     const orgId = req.params.id;
-//     const refresh = req.query.refresh ? '?refresh=1' : '';
-//     const url2 = `${API_BASE_URL}/org/${orgId}${refresh ? '?refresh=1' : ''}`;
-//     const response2 = await axios.get(url2);
-//     const orgFullData = response2.data;
-//     const orgData = orgFullData.org;
-//     const orgName = orgData.org;
-//     const apiKey = orgData.key;
+// Add a new route to check job status
+app.get('/api/job-status/:jobId', (req, res) => {
+  const jobId = req.params.jobId;
+  
+  // Clean up old jobs (older than 1 hour)
+  const now = Date.now();
+  Object.keys(jobStatus).forEach(id => {
+    if (jobStatus[id].created && now - jobStatus[id].created > 3600000) {
+      delete jobStatus[id];
+    }
+  });
+  
+  if (!jobStatus[jobId]) {
+    return res.status(404).json({ error: 'Job not found' });
+  }
+  
+  res.json(jobStatus[jobId]);
+});
 
-//     res.redirect(`http://localhost:3000/?clusterid={}`);
-//   } catch (error) {
-//     console.error("Cannot fetch API key:", error);
-//     res.status(500).send("Error getting API key.");
-//   }
-// });
+// Add route to download the completed export
+app.get('/api/download/:jobId', (req, res) => {
+  try {
+    const jobId = req.params.jobId;
+    
+    if (!jobStatus[jobId] || !jobStatus[jobId].exportId) {
+      return res.status(404).json({ error: 'Export not found or not completed' });
+    }
+    
+    const exportId = jobStatus[jobId].exportId;
+    const filePath = path.join(tempDir, `${exportId}.zip`);
+    const orgName = jobStatus[jobId].orgName || 'organization';
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Export file not found' });
+    }
+    
+    res.download(filePath, `${orgName}-savings-analysis.zip`, (err) => {
+      if (err) {
+        console.error('Download error:', err);
+      } else {
+        // Optionally delete the file after download
+        fs.unlink(filePath, (unlinkErr) => {
+          if (unlinkErr) console.error('Error deleting temporary file:', unlinkErr);
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Error downloading export:', error);
+    res.status(500).send('Failed to download export');
+  }
+});
 
+// Background processing function
+async function processSavingsExport(orgId, jobId) {
+  try {
+    // First get org info to get the name
+    const orgResponse = await axios.get(`${API_BASE_URL}/org/${orgId}`, {
+      headers: {
+        "Authorization": API_API_HEADER
+      }
+    });
+    
+    const orgName = orgResponse.data.org?.org || 'organization';
+    jobStatus[jobId].orgName = orgName;
+    
+    // Call the export API
+    const apiUrl = `${API_BASE_URL}/org/${orgId}/download_monthly_savings_csv`;
+    const response = await axios.get(apiUrl, { 
+      responseType: 'arraybuffer',
+      headers: {
+        "Authorization": API_API_HEADER
+      }
+    });
+    
+    // Generate export ID and save file
+    const exportId = `savings-export-${orgId}-${Date.now()}`;
+    const filePath = path.join(tempDir, `${exportId}.zip`);
+    
+    // Write the file
+    await fs.promises.writeFile(filePath, response.data);
+    
+    // Update job status
+    jobStatus[jobId].status = 'completed';
+    jobStatus[jobId].exportId = exportId;
+    
+  } catch (error) {
+    console.error('Export process failed:', error);
+    
+    // Update job status with error
+    if (jobStatus[jobId]) {
+      jobStatus[jobId].status = 'error';
+      jobStatus[jobId].error = error.message || 'Export failed';
+    }
+  }
+}
 
 // Start server
 app.listen(port, () => {
