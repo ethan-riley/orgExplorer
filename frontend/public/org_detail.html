@@ -340,18 +340,58 @@ async function startSavingsExport(orgId) {
       }
     }, 3000); // Check every 3 seconds
   }
+
+  // Function to trigger browser download from response
+  function triggerDownload(response) {
+    // Create a blob from the response
+    response.blob().then(blob => {
+      // Create a temporary URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      
+      // Get filename from Content-Disposition header if available
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'savings-analysis.zip';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      
+      // Trigger the download
+      a.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      // Show success notification
+      showNotification('Download Started', 'Your savings analysis download has started', 'success');
+    });
+  }
   
   // Function to show notifications
   function showNotification(title, message, type = 'success', onClick = null) {
-    // Remove any existing notifications
+    // Remove any existing notifications with the same title
     const existingNotifications = document.querySelectorAll('.notification');
     existingNotifications.forEach(notification => {
-      notification.remove();
+      if (notification.querySelector('h4').textContent === title) {
+        notification.remove();
+      }
     });
     
     // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
+    notification.id = `notification-${title.replace(/\s+/g, '-').toLowerCase()}`;
     notification.innerHTML = `
       <h4>${title}</h4>
       <p>${message}</p>
@@ -384,7 +424,29 @@ async function startSavingsExport(orgId) {
         }
       }, 10000);
     }
+    
+    return notification;
   }
+  function updateNotification(title, message, type = 'success') {
+    const notificationId = `notification-${title.replace(/\s+/g, '-').toLowerCase()}`;
+    let notification = document.getElementById(notificationId);
+    
+    if (notification) {
+      // Update the existing notification
+      notification.querySelector('p').textContent = message;
+      notification.className = `notification ${type}`;
+    } else {
+      // Create a new notification if it doesn't exist
+      notification = showNotification(title, message, type);
+    }
+    
+    return notification;
+  }
+
+  // Add the notification styles when the page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    addNotificationStyles();
+  });
   </script>
 </body>
 </html>

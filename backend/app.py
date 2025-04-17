@@ -17,6 +17,11 @@ from flask import Flask, request, redirect, url_for, jsonify, flash, send_file
 from gevent.pywsgi import WSGIServer
 from app_security import APISecurityManager, flask_api_security_middleware, require_permission
 
+import datetime
+import zipfile
+import threading
+from functools import wraps
+
 # Import the monthly savings report module.
 import monthlySavingsReport as msr
 import json
@@ -84,6 +89,24 @@ def init_cache_table():
             data TEXT,
             timestamp DATETIME,
             UNIQUE(org_id, action)
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+def init_job_queue_table():
+    """Create the job queue table if it doesn't exist"""
+    conn = get_db_connection()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS job_queue (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER,
+            job_type TEXT,
+            status TEXT DEFAULT 'pending',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            started_at DATETIME,
+            completed_at DATETIME,
+            error TEXT
         )
     """)
     conn.commit()
@@ -172,10 +195,56 @@ def set_cache(org_id, action, data):
 init_db()
 init_cache_table()
 load_orgs_csv()
+init_job_queue_table()
+
+start_background_worker()
+
+# ------------------------------------------
+# API Optimization - Savings Analysis
+# ------------------------------------------
+
+def queue_job(org_id, job_type):
+    """Add a job to the queue and return the job ID"""
+    conn = get_db_connection()
+    cursor = conn.execute(
+        "INSERT INTO job_queue (org_id, job_type) VALUES (?, ?)",
+        (org_id, job_type)
+    )
+    job_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return job_id
+
+def get_job_status(job_id):
+    """Get the status of a job"""
+    conn = get_db_connection()
+    row = conn.execute("SELECT * FROM job_queue WHERE id=?", (job_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def check_pending_jobs(org_id, job_type):
+    """Check if there are any pending jobs for this org and job type"""
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT id FROM job_queue WHERE org_id=? AND job_type=? AND status IN ('pending', 'processing')",
+        (org_id, job_type)
+    ).fetchone()
+    conn.close()
+    return r
+
+def start_background_worker():
+    """Import and start the cache worker in a separate thread"""
+    try:
+        import cache_worker
+        worker_thread = threading.Thread(target=cache_worker.worker_process)
+        worker_thread.daemon = True
+        worker_thread.start()
+        print("Background worker started")
+    except Exception as e:
+        print(f"Error starting background worker: {e}")
 
 # ------------------------------------------
 # API Helper Functions (Cast.ai API routines)
-# (Same as before.)
 # ------------------------------------------
 def get_extended_support_data(provider):
     endpoints = {
@@ -814,61 +883,140 @@ def monthly_savings(org_db_id):
 @require_permission('read')
 def download_monthly_savings_csv(org_db_id):
     """
-    Generates CSV files for the monthly savings report based on cached report data,
-    creates a zip file containing both CSVs, and returns the zip for download.
+    Either returns the cached zip file for download or starts a background job
+    to generate it and returns status information.
     """
     CACHE_KEY_MS = "monthly_savings_report"
-
+    
     org = get_org_by_id(org_db_id)
     if not org:
         return jsonify(error="Organization not found"), 404
-
+    
+    # Check if job status is requested
+    job_id = request.args.get('job_id')
+    if job_id:
+        # Return the status of the job
+        job_status = get_job_status(int(job_id))
+        if not job_status:
+            return jsonify(error="Job not found"), 404
+        return jsonify(job_status)
+    
     org_folder = os.path.join("outputs", org["org"].replace(" ", "_"))
     os.makedirs(org_folder, exist_ok=True)
     org_name = org["org"]
-    savings_csv_name = f"{org_name}_savings.csv"
-    resources_csv_name = f"{org_name}_resources.csv"
-    # Try to get the cached report. If not available, generate it.
-    cached_report = get_cache(org_db_id, CACHE_KEY_MS)
-    if not cached_report:
-        details_csv = get_csv(org["id"])
-        api_key = org["key"]
-        try:
-            savings_df, resource_df = msr.generate_monthly_savings_report(api_key, details_csv, savings_csv_name, resources_csv_name)
-            savings_data = savings_df.to_dict(orient="records")
-            resource_data = resource_df.to_dict(orient="records")
-            report = {"savings": savings_data, "resource": resource_data}
-            set_cache(org_db_id, CACHE_KEY_MS, report)
-        except Exception as e:
-            return jsonify(error=f"Failed to generate monthly savings report: {str(e)}"), 500
-    else:
-        # Reconstruct DataFrames from the cached JSON data.
-        savings_df = pd.DataFrame(cached_report.get("savings"))
-        resource_df = pd.DataFrame(cached_report.get("resource"))
-
-    # Save the two CSV files in the organization folder.
-    savings_csv_file = os.path.join(org_folder, savings_csv_name)
-    resource_csv_file = os.path.join(org_folder, resources_csv_name)
-    try:
-        savings_df.to_csv(savings_csv_file, index=False)
-        resource_df.to_csv(resource_csv_file, index=False)
-    except Exception as e:
-        return jsonify(error=f"Failed to generate CSV files: {str(e)}"), 500
-
-    # Create a zip file containing both CSV files.
-    import zipfile
     zip_filename = os.path.join(org_folder, f"{org_name}_monthly_savings_report.zip")
-    try:
-        with zipfile.ZipFile(zip_filename, "w") as zipf:
-            zipf.write(savings_csv_file, os.path.basename(savings_csv_file))
-            zipf.write(resource_csv_file, os.path.basename(resource_csv_file))
-    except Exception as e:
-        return jsonify(error=f"Failed to create zip file: {str(e)}"), 500
+    
+    # Check if cached report exists
+    cached_report = get_cache(org_db_id, CACHE_KEY_MS)
+    
+    # Check if we should use the cached version or force refresh
+    force_refresh = request.args.get('refresh', 'false').lower() == 'true'
+    
+    if cached_report and not force_refresh and os.path.exists(zip_filename):
+        # Return the cached zip file
+        return send_file(zip_filename, as_attachment=True)
+    
+    # Check if there are already pending jobs for this org
+    if check_pending_jobs(org_db_id, "monthly_savings_report"):
+        # There's already a job in progress
+        return jsonify({
+            "status": "processing",
+            "message": "A job is already in progress to generate the monthly savings report"
+        })
+    
+    # Queue a new job to generate the report
+    job_id = queue_job(org_db_id, "monthly_savings_report")
+    
+    # Return information about the queued job
+    return jsonify({
+        "status": "processing",
+        "message": "Monthly savings report generation has been queued",
+        "jobId": job_id
+    })
 
+# Add a new route to check job status
+@app.route("/api/job-status/<int:job_id>", methods=["GET"])
+@require_permission('read')
+def check_job_status(job_id):
+    """Get the status of a background job"""
+    job_status = get_job_status(job_id)
+    if not job_status:
+        return jsonify(error="Job not found"), 404
+    
+    # Prepare a more user-friendly response
+    status = job_status['status']
+    response = {
+        "status": status,
+        "jobId": job_id,
+        "message": f"Job is {status}"
+    }
+    
+    if status == 'completed':
+        org_id = job_status['org_id']
+        org = get_org_by_id(org_id)
+        if org:
+            response["downloadUrl"] = f"/api/download-report/{org_id}"
+    elif status == 'error':
+        response["error"] = job_status.get('error', 'Unknown error')
+        
+    return jsonify(response)
+
+# Add a new route to download a completed report
+@app.route("/api/download-report/<int:org_id>", methods=["GET"])
+@require_permission('read')
+def download_report(org_id):
+    """Download a completed report"""
+    org = get_org_by_id(org_id)
+    if not org:
+        return jsonify(error="Organization not found"), 404
+    
+    org_folder = os.path.join("outputs", org["org"].replace(" ", "_"))
+    zip_filename = os.path.join(org_folder, f"{org['org']}_monthly_savings_report.zip")
+    
     if not os.path.exists(zip_filename):
-        return jsonify(error="Zip file not found."), 500
-
+        return jsonify(error="Report file not found"), 404
+    
     return send_file(zip_filename, as_attachment=True)
+
+# Add a new route to trigger manual cache refresh (admin only)
+@app.route("/admin/refresh-cache/<int:org_id>", methods=["POST"])
+@require_permission('admin')
+def admin_refresh_cache(org_id):
+    """Admin endpoint to trigger a cache refresh for an organization"""
+    org = get_org_by_id(org_id)
+    if not org:
+        return jsonify(error="Organization not found"), 404
+    
+    job_type = request.args.get('type', 'monthly_savings_report')
+    
+    # Queue a job
+    job_id = queue_job(org_id, job_type)
+    
+    return jsonify({
+        "message": f"Cache refresh for {job_type} queued successfully",
+        "jobId": job_id
+    })
+
+# Add a new route to refresh all caches (admin only)
+@app.route("/admin/refresh-all-caches", methods=["POST"])
+@require_permission('admin')
+def admin_refresh_all_caches():
+    """Admin endpoint to trigger cache refresh for all organizations"""
+    job_type = request.args.get('type', 'monthly_savings_report')
+    
+    # Get all organizations
+    orgs = get_all_orgs()
+    job_ids = []
+    
+    for org in orgs:
+        if org.get('enabled', 1) == 1:  # Only refresh for enabled orgs
+            job_id = queue_job(org['id'], job_type)
+            job_ids.append({"org_id": org['id'], "job_id": job_id})
+    
+    return jsonify({
+        "message": f"Cache refresh for {job_type} queued for all organizations",
+        "jobs": job_ids
+    })
 
 @app.route("/public/manage-keys", methods=["GET", "POST"])
 def manage_keys():
