@@ -47,6 +47,38 @@ os.makedirs(temp_dir, exist_ok=True)
 # ----------------------------
 # Database & Cache Helper Functions
 # ----------------------------
+
+# Add this to the start of your app.py to test basic database operations
+@app.route("/test-db", methods=["GET"])
+def test_db():
+    try:
+        # Test creating the job_queue table
+        conn = get_db_connection()
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS job_queue_test (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                org_id INTEGER,
+                job_type TEXT,
+                status TEXT DEFAULT 'pending'
+            )
+        """)
+        
+        # Test inserting a record
+        conn.execute(
+            "INSERT INTO job_queue_test (org_id, job_type) VALUES (?, ?)",
+            (1, "test_job")
+        )
+        conn.commit()
+        
+        # Test retrieving the record
+        row = conn.execute("SELECT * FROM job_queue_test").fetchone()
+        conn.close()
+        
+        return jsonify({"status": "success", "message": "Database operations successful", "data": dict(row)})
+    except Exception as e:
+        import traceback
+        return jsonify({"status": "error", "message": f"Database error: {str(e)}", "traceback": traceback.format_exc()})
+
 def start_background_worker():
     """Import and start the cache worker in a separate thread"""
     try:
@@ -885,10 +917,17 @@ def monthly_savings(org_db_id):
 @app.route("/org/<int:org_db_id>/download_monthly_savings_csv", methods=["GET"])
 @require_permission('read')
 def download_monthly_savings_csv(org_db_id):
+    """
+    Either returns the cached zip file for download or starts a background job
+    to generate it and returns status information.
+    """
     try:
+        print(f"Starting download_monthly_savings_csv for org_id={org_db_id}")
         CACHE_KEY_MS = "monthly_savings_report"
+        
         org = get_org_by_id(org_db_id)
         if not org:
+            print(f"Organization {org_db_id} not found")
             return jsonify(error="Organization not found"), 404
         
         # Check if job status is requested
@@ -933,11 +972,10 @@ def download_monthly_savings_csv(org_db_id):
             "jobId": job_id
         })
     except Exception as e:
-        # Log the full error
         import traceback
-        print(f"Error in download_monthly_savings_csv: {str(e)}")
-        print(traceback.format_exc())
-        # Return a useful error message
+        error_trace = traceback.format_exc()
+        print(f"ERROR in download_monthly_savings_csv: {str(e)}")
+        print(error_trace)
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
 
 # Add a new route to check job status
