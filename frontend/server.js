@@ -227,7 +227,7 @@ app.get('/api/org/:orgId/cluster/:clusterId', async (req, res) => {
 // Add Organization route
 app.post('/orgs', async (req, res) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/orgs`, req.body);
+    const response = await axios.post(`${API_BASE_URL}/orgs`, req.body, { headers: { "Authorization": API_API_HEADER } });
     res.redirect('/');
   } catch (error) {
     console.error('Error adding organization:', error);
@@ -240,7 +240,7 @@ app.post('/orgs/edit/:id', async (req, res) => {
   try {
     const orgId = req.params.id;
     req.body.id = orgId;
-    const response = await axios.post(`${API_BASE_URL}/orgs`, req.body);
+    const response = await axios.post(`${API_BASE_URL}/orgs`, req.body, { headers: { "Authorization": API_API_HEADER } });
     res.redirect('/');
   } catch (error) {
     console.error('Error updating organization:', error);
@@ -323,10 +323,10 @@ app.get('/org/:id/download_csv', async (req, res) => {
 app.get('/org/:id/download_monthly_savings_csv', async (req, res) => {
   try {
     const orgId = req.params.id;
-    
+
     // Create a job ID
     const jobId = `savings-export-${orgId}-${Date.now()}`;
-    
+
     // Initialize job status
     jobStatus[jobId] = {
       status: 'processing',
@@ -335,17 +335,17 @@ app.get('/org/:id/download_monthly_savings_csv', async (req, res) => {
       error: null,
       created: Date.now()
     };
-    
+
     // Send immediate response with job ID
     res.json({
       status: 'processing',
       message: 'Export started. You will be notified when complete.',
       jobId: jobId
     });
-    
+
     // Process the export in the background
     processSavingsExport(orgId, jobId);
-    
+
   } catch (error) {
     console.error('Error starting export:', error);
     res.status(500).json({ error: 'Failed to start export process' });
@@ -355,7 +355,7 @@ app.get('/org/:id/download_monthly_savings_csv', async (req, res) => {
 // Add a new route to check job status
 app.get('/api/job-status/:jobId', (req, res) => {
   const jobId = req.params.jobId;
-  
+
   // Clean up old jobs (older than 1 hour)
   const now = Date.now();
   Object.keys(jobStatus).forEach(id => {
@@ -363,11 +363,11 @@ app.get('/api/job-status/:jobId', (req, res) => {
       delete jobStatus[id];
     }
   });
-  
+
   if (!jobStatus[jobId]) {
     return res.status(404).json({ error: 'Job not found' });
   }
-  
+
   res.json(jobStatus[jobId]);
 });
 
@@ -375,19 +375,19 @@ app.get('/api/job-status/:jobId', (req, res) => {
 app.get('/api/download/:jobId', (req, res) => {
   try {
     const jobId = req.params.jobId;
-    
+
     if (!jobStatus[jobId] || !jobStatus[jobId].exportId) {
       return res.status(404).json({ error: 'Export not found or not completed' });
     }
-    
+
     const exportId = jobStatus[jobId].exportId;
     const filePath = path.join(tempDir, `${exportId}.zip`);
     const orgName = jobStatus[jobId].orgName || 'organization';
-    
+
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'Export file not found' });
     }
-    
+
     res.download(filePath, `${orgName}-savings-analysis.zip`, (err) => {
       if (err) {
         console.error('Download error:', err);
@@ -413,33 +413,33 @@ async function processSavingsExport(orgId, jobId) {
         "Authorization": API_API_HEADER
       }
     });
-    
+
     const orgName = orgResponse.data.org?.org || 'organization';
     jobStatus[jobId].orgName = orgName;
-    
+
     // Call the export API
     const apiUrl = `${API_BASE_URL}/org/${orgId}/download_monthly_savings_csv`;
-    const response = await axios.get(apiUrl, { 
+    const response = await axios.get(apiUrl, {
       responseType: 'arraybuffer',
       headers: {
         "Authorization": API_API_HEADER
       }
     });
-    
+
     // Generate export ID and save file
     const exportId = `savings-export-${orgId}-${Date.now()}`;
     const filePath = path.join(tempDir, `${exportId}.zip`);
-    
+
     // Write the file
     await fs.promises.writeFile(filePath, response.data);
-    
+
     // Update job status
     jobStatus[jobId].status = 'completed';
     jobStatus[jobId].exportId = exportId;
-    
+
   } catch (error) {
     console.error('Export process failed:', error);
-    
+
     // Update job status with error
     if (jobStatus[jobId]) {
       jobStatus[jobId].status = 'error';
