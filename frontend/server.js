@@ -13,7 +13,6 @@ const API_BASE_URL = 'https://api.tech-sphere.pro';
 const API_API_HEADER = "274a7c568bf54ebca676fd9313360c4c";
 
 const fs = require('fs');
-const path = require('path');
 
 // Create temp directory if it doesn't exist
 const tempDir = path.join(__dirname, 'temp');
