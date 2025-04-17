@@ -700,7 +700,7 @@ def fetch_full_cluster_details(api_key, cluster_id, org_dir="."):
 # Flask Routes (JSON-only endpoints)
 # --------------------------
 @app.route("/orgs/edit/<int:org_id>")
-@require_permission('read')
+@require_permission('write')
 def edit_org(org_id):
     org_row = get_org_by_id(org_id)
     if not org_row:
@@ -722,21 +722,39 @@ def index():
     return jsonify(orgs=orgs)
 
 @app.route("/orgs", methods=["GET", "POST"])
-@require_permission('read')
+@require_permission('write')
 def manage_orgs():
     if request.method == "POST":
-        action = request.form.get("action")
-        org_name = request.form.get("org")
-        key = request.form.get("key")
-        org_identifier = request.form.get("org_id")
-        region = request.form.get("region", "US Region")
-        if action == "add":
-            add_org(org_name, key, org_identifier, region)
-            return jsonify(message="Organization added successfully")
-        elif action == "update":
-            org_db_id = request.form.get("id")
-            update_org(org_db_id, org_name, key, org_identifier, region)
-            return jsonify(message="Organization updated successfully")
+        try:
+            print("POST request to /orgs received")
+            print(f"Form data: {request.form}")
+
+            action = request.form.get("action")
+            org_name = request.form.get("org")
+            key = request.form.get("key")
+            org_identifier = request.form.get("org_id")
+            region = request.form.get("region", "US Region")
+
+            print(f"Action: {action}, Org: {org_name}, Key: {key[:5]}..., OrgID: {org_identifier}, Region: {region}")
+
+            if action == "add":
+                add_org(org_name, key, org_identifier, region)
+                print(f"Organization {org_name} added successfully")
+                return jsonify(message="Organization added successfully")
+            elif action == "update":
+                org_db_id = request.form.get("id")
+                print(f"Updating organization ID: {org_db_id}")
+                update_org(org_db_id, org_name, key, org_identifier, region)
+                print(f"Organization {org_name} updated successfully")
+                return jsonify(message="Organization updated successfully")
+            else:
+                print(f"Unknown action: {action}")
+                return jsonify(error=f"Unknown action: {action}"), 400
+        except Exception as e:
+            import traceback
+            print(f"Error in manage_orgs POST: {str(e)}")
+            print(traceback.format_exc())
+            return jsonify(error=f"Error processing request: {str(e)}"), 500
     else:
         conn = get_db_connection()
         orgs = conn.execute("SELECT * FROM organizations").fetchall()
