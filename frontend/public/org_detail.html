@@ -159,8 +159,7 @@
                 alert('API key not available');
                 return;
               }
-
-              const generatedUrl = `http://localhost:3000/?clusterid=${currentClusterId}&clustername=${currentClusterName}&apikey=${data.org.key}`;
+              const generatedUrl = `http://explorer.tech-sphere.pro/?clusterid=${currentClusterId}&clustername=${currentClusterName}&apikey=${data.org.key}`;
 
               window.open(generatedUrl, '_blank');
             } catch (error) {
